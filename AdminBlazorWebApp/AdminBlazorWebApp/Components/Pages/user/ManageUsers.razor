@@ -3,11 +3,13 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin,SuperAdmin")]
 @inject HttpClient Http
+@inject IConfiguration Configuration
+@rendermode InteractiveServer
 <PageTitle>Manage Users</PageTitle>
 
 
 
-@rendermode InteractiveServer
+
 
 <div class="container">
     <h3>User List</h3>
@@ -71,8 +73,7 @@
     {
         try
         {
-            var apiUrl = "https://userprovider-silicon-thanakorn.azurewebsites.net/api/GetUsers?code=v7TGf6LUCFmjhTXotMVaEGqHJZ1uSz-xafXIE3fpLoRmAzFutv5WRg%3D%3D";
-            users = await Http.GetFromJsonAsync<List<ApplicationUserForUser>>(apiUrl);
+            users = await Http.GetFromJsonAsync<List<ApplicationUserForUser>>(Configuration["GetUsers"]);
         }
         catch (Exception ex)
         {
@@ -83,11 +84,9 @@
             isLoading = false;
         }
     }
-
     private async Task DeleteUser(string id)
     {
-        var deleteUrl = $"https://userprovider-silicon-thanakorn.azurewebsites.net/api/DeleteUser/{id}?code=D29AUT18Cswl29hm5JPezVKtk9v0r3_W_pO1p_pyveJRAzFu2iIzIQ%3D%3D";
-
+        var deleteUrl = $"{Configuration["DeleteUserByID"]}{id}{Configuration["DeleteUserByIDFunctionKey"]}";
         try
         {
             var response = await Http.DeleteAsync(deleteUrl);

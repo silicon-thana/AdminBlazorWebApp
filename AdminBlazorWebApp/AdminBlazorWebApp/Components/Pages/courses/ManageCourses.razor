@@ -5,6 +5,7 @@
 @attribute [Authorize(Roles = "Admin,SuperAdmin")]
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject IConfiguration Configuration
 @rendermode InteractiveServer
 <PageTitle>Manage Courses</PageTitle>
 
@@ -55,13 +56,12 @@
     {
         try
         {
-            var apiUrl = "https://courseprovider-silicon-thanakorn.azurewebsites.net/api/graphql?code=t-uUZAYLh4S-n5ibPELeB66J327bj1C17cBG_leWlJKIAzFuL5TYxA%3D%3D";
             var query = new
             {
                 query = "{ getCourses { id title imageUri } }"
             };
 
-            var response = await Http.PostAsJsonAsync(apiUrl, query);
+            var response = await Http.PostAsJsonAsync(Configuration["GraphqlAPI"], query);
 
             if (response.IsSuccessStatusCode)
             {
@@ -94,7 +94,6 @@
     {
         try
         {
-            var apiUrl = "https://courseprovider-silicon-thanakorn.azurewebsites.net/api/graphql?code=t-uUZAYLh4S-n5ibPELeB66J327bj1C17cBG_leWlJKIAzFuL5TYxA%3D%3D";
             var mutation = new
             {
                 query = @"mutation($id: String!) {
@@ -103,7 +102,7 @@
                 variables = new { id }
             };
 
-            var response = await Http.PostAsJsonAsync(apiUrl, mutation);
+            var response = await Http.PostAsJsonAsync(Configuration["GraphqlAPI"], mutation);
 
             if (response.IsSuccessStatusCode)
             {

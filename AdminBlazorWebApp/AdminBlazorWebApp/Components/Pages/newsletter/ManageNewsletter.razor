@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin,SuperAdmin")]
 @inject HttpClient Http
+@inject IConfiguration Configuration
 @rendermode InteractiveServer
 <PageTitle>Manage Newsletter</PageTitle>
 
@@ -128,8 +129,7 @@
     {
         try
         {
-            var apiUrl = "https://newsletterprovider-silicon-thanakorn.azurewebsites.net/api/GetSubscribers?code=BXi6HO6liT0RT95Sczz2NgfxDqanLOv1lDoLhnLv9oizAzFucBX1mA%3D%3D";
-            subscribers = await Http.GetFromJsonAsync<List<SubscribeEntity>>(apiUrl);
+            subscribers = await Http.GetFromJsonAsync<List<SubscribeEntity>>(Configuration["GetSubscribersAPI"]);
             Console.WriteLine("Loaded subscribers successfully");
         }
         catch (Exception ex)
@@ -152,14 +152,12 @@
         // Reload the subscriber data to discard changes
         _ = LoadSubscribers();
     }
-
     private async Task SaveSubscriber(SubscribeEntity subscriber)
     {
         try
         {
             Console.WriteLine($"Saving subscriber: {subscriber.Email}");
-            var apiUrl = $"https://newsletterprovider-silicon-thanakorn.azurewebsites.net/api/UpdateSubscriber/{subscriber.Email}?code=BhdykpNIhq24uH8BFL2rcfXZyBkYXVe4jrYZHbftOTITAzFus8x0fg%3D%3D";
-            var response = await Http.PutAsJsonAsync(apiUrl, new
+            var response = await Http.PutAsJsonAsync($"{Configuration["UpdateSubscriberAPI"]}{subscriber.Email}{Configuration["UpdateSubscriberFunctionKey"]}", new
             {
                 dailyNewsletter = subscriber.DailyNewsletter,
                 advertisingUpdates = subscriber.AdvertisingUpdates,

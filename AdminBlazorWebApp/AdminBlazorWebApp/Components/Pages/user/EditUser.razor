@@ -5,7 +5,10 @@
 @attribute [Authorize(Roles = "Admin,SuperAdmin")]
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject IConfiguration Configuration
 <PageTitle>Edit @user?.UserName</PageTitle>
+
+@rendermode InteractiveServer
 
 
 <div class="container">
@@ -93,16 +96,17 @@
 
 @code {
     [Parameter]
-    public string Id { get; set; }
+    public string Id { get; set; } = null!;
 
-    private ApplicationUserForUser user;
-    private string error;
+    private ApplicationUserForUser? user;
+    private string?error;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var apiUrl = $"https://userprovider-silicon-thanakorn.azurewebsites.net/api/GetUser/{Id}?code=lSoYTAYYsMq2mKQngfb3YSGWnpZEwFWrpOEN4Shel3sdAzFuTKEYiw%3D%3D";
+            
+            var apiUrl = $"{Configuration["GetUserAPI"]}{Id}{Configuration["GetUserAPIFunctionKey"]}";
             user = await Http.GetFromJsonAsync<ApplicationUserForUser>(apiUrl);
             if (user == null)
             {
@@ -124,9 +128,9 @@
 
     private void InitializeAddress()
     {
-        if (user.Address == null)
+        if (user?.Address == null)
         {
-            user.Address = new AddressEntity();
+            user!.Address = new AddressEntity();
         }
     }
 
@@ -134,7 +138,7 @@
     {
         try
         {
-            var apiUrl = $"https://userprovider-silicon-thanakorn.azurewebsites.net/api/UpdateUser/{user.Id}?code=LTK511rigxTZWqduex0XcaMVV9S52HCXSeIEooS5_I-dAzFuNC9qIA%3D%3D";
+            var apiUrl = $"{Configuration["UpdateUserAPI"]}{user!.Id}{Configuration["UpdateUserAPIFunctionKey"]}";
             var response = await Http.PutAsJsonAsync(apiUrl, user);
 
             if (response.IsSuccessStatusCode)

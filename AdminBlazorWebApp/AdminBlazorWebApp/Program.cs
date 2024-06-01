@@ -1,12 +1,28 @@
-using AdminBlazorWebApp.Client.Pages;
 using AdminBlazorWebApp.Components;
 using AdminBlazorWebApp.Components.Account;
 using AdminBlazorWebApp.Data;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Azure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var keyVaultUri = builder.Configuration["VaultUri"];
+if (!string.IsNullOrEmpty(keyVaultUri))
+{
+    var clientId = Environment.GetEnvironmentVariable("AdminWebApp_CLIENT_ID");
+    var tenantId = Environment.GetEnvironmentVariable("AdminWebApp_TENANT_ID");
+    var clientSecret = Environment.GetEnvironmentVariable("AdminWebApp_CLIENT_SECRET");
+
+    if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(tenantId) || string.IsNullOrEmpty(clientSecret))
+    {
+        throw new InvalidOperationException("One or more environment variables are not set.");
+    }
+
+    var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+    builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUri), credential);
+}
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -35,7 +51,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/notfound"; // Customize the access denied path
 });
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var connectionString = builder.Configuration["DefaultConnectionAdmin"] ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -85,8 +101,5 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(AdminBlazorWebApp.Client._Imports).Assembly);
-
-// Add additional endpoints required by the Identity /Account Razor components.
-app.MapAdditionalIdentityEndpoints();
 
 app.Run();

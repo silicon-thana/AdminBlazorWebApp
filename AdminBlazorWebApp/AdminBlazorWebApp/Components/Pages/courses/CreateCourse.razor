@@ -4,6 +4,7 @@
 @attribute [Authorize(Roles = "Admin,SuperAdmin")]
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject IConfiguration Configuration
 
 @rendermode InteractiveServer
 
@@ -70,7 +71,7 @@
 
         <!-- Authors -->
         <h4>Authors</h4>
-        @foreach (var author in newCourse.Authors)
+        @foreach (var author in newCourse.Authors!)
         {
             <div class="mb-3">
                 <label class="form-label">Name</label>
@@ -87,7 +88,7 @@
         <h4>Prices</h4>
         <div class="mb-3">
             <label class="form-label">Currency</label>
-            <InputText class="form-control" @bind-Value="newCourse.Prices.Currency" />
+            <InputText class="form-control" @bind-Value="newCourse.Prices!.Currency" />
         </div>
         <div class="mb-3">
             <label class="form-label">Price</label>
@@ -102,7 +103,7 @@
         <h4>Content</h4>
         <div class="mb-3">
             <label class="form-label">Description</label>
-            <InputText class="form-control" @bind-Value="newCourse.Content.Description" />
+            <InputText class="form-control" @bind-Value="newCourse.Content!.Description" />
         </div>
         <div class="mb-3">
             <label class="form-label">Includes</label>
@@ -117,7 +118,7 @@
 
         <!-- Program Details -->
         <h4>Program Details</h4>
-        @foreach (var detail in newCourse.Content.ProgramDetails)
+        @foreach (var detail in newCourse.Content.ProgramDetails!)
         {
             <div class="mb-3">
                 <label class="form-label">Title</label>
@@ -155,7 +156,7 @@
         try
         {
             newCourse.Categories = newCategories?.Split(',').Select(c => c.Trim()).ToArray();
-            newCourse.Content.Includes = newIncludes?.Split(',').Select(i => i.Trim()).ToArray();
+            newCourse.Content!.Includes = newIncludes?.Split(',').Select(i => i.Trim()).ToArray();
             newCourse.Content.Learn = newLearn?.Split(',').Select(l => l.Trim()).ToArray();
 
             var mutation = @"mutation($input: CourseCreateRequestInput!) {
@@ -172,7 +173,7 @@
             var content = JsonContent.Create(new { query = mutation, variables });
             content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
 
-            var response = await Http.PostAsJsonAsync("https://courseprovider-silicon-thanakorn.azurewebsites.net/api/graphql?code=t-uUZAYLh4S-n5ibPELeB66J327bj1C17cBG_leWlJKIAzFuL5TYxA%3D%3D", new { query = mutation, variables });
+            var response = await Http.PostAsJsonAsync(Configuration["GraphqlAPI"], new { query = mutation, variables });
 
             if (response.IsSuccessStatusCode)
             {
@@ -200,12 +201,12 @@
 
     private void AddAuthor()
     {
-        newCourse.Authors.Add(new AuthorCreateRequest());
+        newCourse.Authors!.Add(new AuthorCreateRequest());
     }
 
     private void AddProgramDetail()
     {
-        newCourse.Content.ProgramDetails.Add(new ProgramDetailItemCreateRequest());
+        newCourse.Content!.ProgramDetails!.Add(new ProgramDetailItemCreateRequest());
     }
 
     private void Cancel()

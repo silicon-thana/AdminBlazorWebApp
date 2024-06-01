@@ -81,12 +81,12 @@
 
 @code {
     [Parameter]
-    public string Id { get; set; }
+    public string? Id { get; set; }
 
-    private ApplicationUser user;
-    private string error;
-    private string newPassword;
-    private string selectedRole;
+    private ApplicationUser user = null!;
+    private string? error;
+    private string newPassword = null!;
+    private string? selectedRole;
     private List<string> allRoles = new List<string>();
     private List<string> userRoles = new List<string>();
 

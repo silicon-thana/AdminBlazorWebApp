@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin,SuperAdmin")]
 @inject HttpClient Http
+@inject IConfiguration Configuration
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
 
@@ -182,7 +183,7 @@
             var request = new HttpRequestMessage
                 {
                     Method = HttpMethod.Post,
-                    RequestUri = new Uri("https://courseprovider-silicon-thanakorn.azurewebsites.net/api/graphql?code=t-uUZAYLh4S-n5ibPELeB66J327bj1C17cBG_leWlJKIAzFuL5TYxA%3D%3D"),
+                    RequestUri = new Uri(Configuration["GraphqlAPI"]!),
                     Content = content
                 };
 
@@ -268,7 +269,7 @@
             var request = new HttpRequestMessage
                 {
                     Method = HttpMethod.Post,
-                    RequestUri = new Uri("https://courseprovider-silicon-thanakorn.azurewebsites.net/api/graphql?code=t-uUZAYLh4S-n5ibPELeB66J327bj1C17cBG_leWlJKIAzFuL5TYxA%3D%3D"),
+                    RequestUri = new Uri(Configuration["GraphqlAPI"]!),
                     Content = content
                 };
 
