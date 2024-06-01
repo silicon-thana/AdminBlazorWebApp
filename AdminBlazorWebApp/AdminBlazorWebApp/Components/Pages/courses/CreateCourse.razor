@@ -1,0 +1,225 @@
+﻿@page "/createcourse"
+@using AdminBlazorWebApp.Models
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+@rendermode InteractiveServer
+
+<div class="container">
+    <h3>Create Course</h3>
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <p class="text-danger">@errorMessage</p>
+    }
+
+    <EditForm Model="newCourse" OnValidSubmit="HandleValidSubmit" FormName="createCourse">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label for="title" class="form-label">Title</label>
+            <InputText id="title" class="form-control" @bind-Value="newCourse.Title" />
+        </div>
+        <div class="mb-3">
+            <label for="imageUri" class="form-label">Image URL</label>
+            <InputText id="imageUri" class="form-control" @bind-Value="newCourse.ImageUri" />
+        </div>
+        <div class="mb-3">
+            <label for="imageHeaderUri" class="form-label">Image Header URL</label>
+            <InputText id="imageHeaderUri" class="form-control" @bind-Value="newCourse.ImageHeaderUri" />
+        </div>
+        <div class="mb-3">
+            <label for="isBestseller" class="form-label">Is Bestseller</label>
+            <InputCheckbox id="isBestseller" class="form-check-input" @bind-Value="newCourse.IsBestseller" />
+        </div>
+        <div class="mb-3">
+            <label for="isDigital" class="form-label">Is Digital</label>
+            <InputCheckbox id="isDigital" class="form-check-input" @bind-Value="newCourse.IsDigital" />
+        </div>
+        <div class="mb-3">
+            <label for="categories" class="form-label">Categories</label>
+            <InputText id="categories" class="form-control" @bind-Value="newCategories" />
+            <small class="form-text text-muted">Comma-separated values</small>
+        </div>
+        <div class="mb-3">
+            <label for="ingress" class="form-label">Ingress</label>
+            <InputText id="ingress" class="form-control" @bind-Value="newCourse.Ingress" />
+        </div>
+        <div class="mb-3">
+            <label for="starRating" class="form-label">Star Rating</label>
+            <InputNumber id="starRating" class="form-control" @bind-Value="newCourse.StarRating" />
+        </div>
+        <div class="mb-3">
+            <label for="reviews" class="form-label">Reviews</label>
+            <InputText id="reviews" class="form-control" @bind-Value="newCourse.Reviews" />
+        </div>
+        <div class="mb-3">
+            <label for="likesInProcent" class="form-label">Likes In Procent</label>
+            <InputText id="likesInProcent" class="form-control" @bind-Value="newCourse.LikesInProcent" />
+        </div>
+        <div class="mb-3">
+            <label for="likes" class="form-label">Likes</label>
+            <InputText id="likes" class="form-control" @bind-Value="newCourse.Likes" />
+        </div>
+        <div class="mb-3">
+            <label for="hours" class="form-label">Hours</label>
+            <InputText id="hours" class="form-control" @bind-Value="newCourse.Hours" />
+        </div>
+
+        <!-- Authors -->
+        <h4>Authors</h4>
+        @foreach (var author in newCourse.Authors)
+        {
+            <div class="mb-3">
+                <label class="form-label">Name</label>
+                <InputText class="form-control" @bind-Value="author.Name" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Author Image URL</label>
+                <InputText class="form-control" @bind-Value="author.AuthorImageUri" />
+            </div>
+        }
+        <button type="button" class="btn-gray" @onclick="AddAuthor">Add Author</button>
+
+        <!-- Prices -->
+        <h4>Prices</h4>
+        <div class="mb-3">
+            <label class="form-label">Currency</label>
+            <InputText class="form-control" @bind-Value="newCourse.Prices.Currency" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Price</label>
+            <InputNumber class="form-control" @bind-Value="newCourse.Prices.Price" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Discount</label>
+            <InputNumber class="form-control" @bind-Value="newCourse.Prices.Discount" />
+        </div>
+
+        <!-- Content -->
+        <h4>Content</h4>
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <InputText class="form-control" @bind-Value="newCourse.Content.Description" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Includes</label>
+            <InputText class="form-control" @bind-Value="newIncludes" />
+            <small class="form-text text-muted">Comma-separated values</small>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Learn</label>
+            <InputText class="form-control" @bind-Value="newLearn" />
+            <small class="form-text text-muted">Comma-separated values</small>
+        </div>
+
+        <!-- Program Details -->
+        <h4>Program Details</h4>
+        @foreach (var detail in newCourse.Content.ProgramDetails)
+        {
+            <div class="mb-3">
+                <label class="form-label">Title</label>
+                <InputText class="form-control" @bind-Value="detail.Title" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <InputText class="form-control" @bind-Value="detail.Description" />
+            </div>
+        }
+        <button type="button" class="btn-gray" @onclick="AddProgramDetail">Add Program Detail</button>
+
+        <button type="submit" class="btn-theme">Create Course</button>
+        <button type="button" class="btn-danger" @onclick="Cancel">Cancel</button>
+    </EditForm>
+</div>
+
+@code {
+    private CourseCreateRequest newCourse = new CourseCreateRequest
+        {
+            Authors = new List<AuthorCreateRequest>(),
+            Prices = new PricesCreateRequest(),
+            Content = new ContentCreateRequest
+            {
+                ProgramDetails = new List<ProgramDetailItemCreateRequest>()
+            }
+        };
+    private string? newCategories;
+    private string? newIncludes;
+    private string? newLearn;
+    private string? errorMessage;
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            newCourse.Categories = newCategories?.Split(',').Select(c => c.Trim()).ToArray();
+            newCourse.Content.Includes = newIncludes?.Split(',').Select(i => i.Trim()).ToArray();
+            newCourse.Content.Learn = newLearn?.Split(',').Select(l => l.Trim()).ToArray();
+
+            var mutation = @"mutation($input: CourseCreateRequestInput!) {
+                createCourse(input: $input) {
+                    id
+                }
+            }";
+
+            var variables = new
+            {
+                input = newCourse
+            };
+
+            var content = JsonContent.Create(new { query = mutation, variables });
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+
+            var response = await Http.PostAsJsonAsync("https://courseprovider-silicon-thanakorn.azurewebsites.net/api/graphql?code=t-uUZAYLh4S-n5ibPELeB66J327bj1C17cBG_leWlJKIAzFuL5TYxA%3D%3D", new { query = mutation, variables });
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<GraphQLResponse<UpdateCourseResponse>>();
+                if (result?.Data?.CreateCourse != null)
+                {
+                    Navigation.NavigateTo("/courses");
+                }
+                else
+                {
+                    errorMessage = "Failed to create course.";
+                }
+            }
+            else
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Error creating course: {responseContent}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error creating course: {ex.Message}";
+        }
+    }
+
+    private void AddAuthor()
+    {
+        newCourse.Authors.Add(new AuthorCreateRequest());
+    }
+
+    private void AddProgramDetail()
+    {
+        newCourse.Content.ProgramDetails.Add(new ProgramDetailItemCreateRequest());
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/courses");
+    }
+
+    public class GraphQLResponse<T>
+    {
+        public T Data { get; set; } = default!;
+    }
+
+    public class UpdateCourseResponse
+    {
+        public CourseCreateRequest CreateCourse { get; set; } = new CourseCreateRequest();
+    }
+}

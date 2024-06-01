@@ -1,0 +1,125 @@
+section {
+    &.subscribe {
+        background-color: $gray-100;
+        padding: 100px 0;
+
+        .container {
+            padding: 0 50px;
+
+            .content {
+                text-align: center;
+
+                .title {
+                    img {
+                        margin-left: 10px;
+                    }
+
+                    h1 {
+                        font-size: 2em;
+                        margin-bottom: 20px;
+                    }
+                }
+            }
+
+            .subscribe-form {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+
+                .subscribe-text {
+                    margin-bottom: 20px;
+
+                    h5 {
+                        color: $gray-900;
+                        font-size: 1.2em;
+                        font-weight: bold;
+                    }
+                }
+
+                .subscribe-option {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    margin-bottom: 20px;
+
+                    .option {
+                        display: grid;
+                        grid-template-columns: repeat(3, 1fr);
+                        grid-gap: 10px;
+                        margin-bottom: 20px;
+
+                        .checkbox-group {
+                            .input-group {
+                                display: flex;
+                                align-items: center;
+
+
+                                input {
+                                    margin-right: 10px;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                .form-email {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+
+                    .input-group {
+                        position: relative;
+                        width: 300px;
+                        margin-right: 10px;
+
+                        i {
+                            position: absolute;
+                            left: 10px;
+                            top: 50%;
+                            transform: translateY(-50%);
+                            pointer-events: none;
+                            color: #999;
+                        }
+
+                        input {
+                            width: 100%;
+                            padding: 10px 10px 10px 30px; /* Adjust padding to make room for the icon */
+                            border: 1px solid #ccc;
+                            border-radius: 5px;
+                            box-sizing: border-box;
+                        }
+                    }
+                }
+
+                .btn-theme {
+                    background-color: #6366f1;
+                    color: white;
+                    padding: 10px 20px;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                }
+
+                .btn-theme:hover {
+                    background-color: #4f46e5;
+                }
+
+                .field-validation-error {
+                    color: red;
+                    margin-top: 10px;
+                }
+
+                .status-message {
+                    margin-top: 20px;
+                    font-size: 0.875em;
+                }
+
+                .status-message a {
+                    color: #6366f1;
+                    text-decoration: none;
+                }
+            }
+        }
+    }
+}

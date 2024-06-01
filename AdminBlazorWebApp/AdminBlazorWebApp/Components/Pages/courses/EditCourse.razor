@@ -1,0 +1,342 @@
+﻿@page "/editcourse/{id}"
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using AdminBlazorWebApp.Models
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Edit @course?.Title</PageTitle>
+
+<div class="container">
+    <h3>Edit Course</h3>
+    @if (errorMessage != null)
+    {
+        <p class="text-danger">@errorMessage</p>
+    }
+    else if (course == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <EditForm Model="course" OnValidSubmit="SaveCourse" FormName="saveCourse">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="form-group">
+                <label for="title">Title</label>
+                <InputText id="title" class="form-control" @bind-Value="course.Title" />
+            </div>
+            <div class="form-group">
+                <label for="imageUri">Image URI</label>
+                <InputText id="imageUri" class="form-control" @bind-Value="course.ImageUri" />
+            </div>
+            <div class="form-group">
+                <label for="imageHeaderUri">Image Header URI</label>
+                <InputText id="imageHeaderUri" class="form-control" @bind-Value="course.ImageHeaderUri" />
+            </div>
+            <div class="form-group">
+                <label for="isBestseller">Is Bestseller</label>
+                <InputCheckbox id="isBestseller" @bind-Value="course.IsBestseller" />
+            </div>
+            <div class="form-group">
+                <label for="isDigital">Is Digital</label>
+                <InputCheckbox id="isDigital" @bind-Value="course.IsDigital" />
+            </div>
+            <div class="form-group">
+                <label for="categories">Categories</label>
+                <InputText id="categories" class="form-control" @bind-Value="categoriesString" />
+                <small class="form-text text-muted">Comma-separated values</small>
+            </div>
+            <div class="form-group">
+                <label for="ingress">Ingress</label>
+                <InputText id="ingress" class="form-control" @bind-Value="course.Ingress" />
+            </div>
+            <div class="form-group">
+                <label for="starRating">Star Rating</label>
+                <InputNumber id="starRating" class="form-control" @bind-Value="course.StarRating" />
+            </div>
+            <div class="form-group">
+                <label for="reviews">Reviews</label>
+                <InputText id="reviews" class="form-control" @bind-Value="course.Reviews" />
+            </div>
+            <div class="form-group">
+                <label for="likesInProcent">Likes In Procent</label>
+                <InputText id="likesInProcent" class="form-control" @bind-Value="course.LikesInProcent" />
+            </div>
+            <div class="form-group">
+                <label for="likes">Likes</label>
+                <InputText id="likes" class="form-control" @bind-Value="course.Likes" />
+            </div>
+            <div class="form-group">
+                <label for="hours">Hours</label>
+                <InputText id="hours" class="form-control" @bind-Value="course.Hours" />
+            </div>
+
+            <!-- Authors -->
+            <h4>Authors</h4>
+            @if (course.Authors != null)
+            {
+                @foreach (var author in course.Authors)
+                {
+                    <div class="form-group">
+                        <label class="form-label">Name</label>
+                        <InputText class="form-control" @bind-Value="author.Name" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Author Image URL</label>
+                        <InputText class="form-control" @bind-Value="author.AuthorImageUri" />
+                    </div>
+                }
+            }
+            <button type="button" class="btn-gray mb-3" @onclick="AddAuthor">Add Author</button>
+
+            <!-- Prices -->
+            <h4>Prices</h4>
+            <div class="form-group">
+                <label class="form-label">Currency</label>
+                <InputText class="form-control" @bind-Value="course.Prices.Currency" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Price</label>
+                <InputNumber class="form-control" @bind-Value="course.Prices.Price" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Discount</label>
+                <InputNumber class="form-control" @bind-Value="course.Prices.Discount" />
+            </div>
+
+            <!-- Content -->
+            <h4>Content</h4>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <InputText class="form-control" @bind-Value="course.Content.Description" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Includes</label>
+                <InputText class="form-control" @bind-Value="includesString" />
+                <small class="form-text text-muted">Comma-separated values</small>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Learn</label>
+                <InputText class="form-control" @bind-Value="learnString" />
+                <small class="form-text text-muted">Comma-separated values</small>
+            </div>
+
+            <!-- Program Details -->
+            <h4>Program Details</h4>
+            @if (course.Content.ProgramDetails != null)
+            {
+                @foreach (var detail in course.Content.ProgramDetails)
+                {
+                    <div class="form-group">
+                        <label class="form-label">Title</label>
+                        <InputText class="form-control" @bind-Value="detail.Title" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <InputText class="form-control" @bind-Value="detail.Description" />
+                    </div>
+                }
+            }
+            <button type="button" class="btn-gray mb-3" @onclick="AddProgramDetail">Add Program Detail</button>
+
+            <button type="submit" class="btn-theme">Save</button>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; }
+
+    private CourseUpdateRequest? course;
+    private string? errorMessage;
+    private string categoriesString;
+    private string includesString;
+    private string learnString;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadCourse();
+    }
+
+    private async Task LoadCourse()
+    {
+        try
+        {
+            var query = new
+            {
+                query = "query($id: String!) { getCourseById(id: $id) { id title imageUri imageHeaderUri isBestseller isDigital categories ingress starRating reviews likesInProcent likes hours authors { name authorImageUri } prices { currency price discount } content { description includes learn programDetails { id title description } } } }",
+                variables = new { id = Id }
+            };
+
+            var content = JsonContent.Create(query);
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+
+            var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = new Uri("https://courseprovider-silicon-thanakorn.azurewebsites.net/api/graphql?code=t-uUZAYLh4S-n5ibPELeB66J327bj1C17cBG_leWlJKIAzFuL5TYxA%3D%3D"),
+                    Content = content
+                };
+
+            var response = await Http.SendAsync(request);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Response Content: {responseContent}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = JsonSerializer.Deserialize<GraphQLResponse<CourseData>>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (result?.Data.GetCourseById != null)
+                {
+                    course = result.Data.GetCourseById;
+                    categoriesString = string.Join(", ", course.Categories ?? new string[0]);
+                    includesString = string.Join(", ", course.Content.Includes ?? new string[0]);
+                    learnString = string.Join(", ", course.Content.Learn ?? new string[0]);
+                }
+                else
+                {
+                    errorMessage = "Data format error: 'getCourseById' property not found.";
+                    Console.WriteLine($"Error: {errorMessage}");
+                }
+            }
+            else
+            {
+                errorMessage = "Error loading course data.";
+                Console.WriteLine($"Error: {errorMessage}");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception: {ex.Message}";
+            Console.WriteLine($"Exception: {errorMessage}");
+        }
+    }
+
+    private async Task SaveCourse()
+    {
+        try
+        {
+            course.Categories = categoriesString.Split(',').Select(c => c.Trim()).ToArray();
+            course.Content.Includes = includesString.Split(',').Select(c => c.Trim()).ToArray();
+            course.Content.Learn = learnString.Split(',').Select(c => c.Trim()).ToArray();
+
+            var mutation = @"mutation($input: CourseUpdateRequestInput!) {
+            updateCourse(input: $input) {
+                id
+            }
+        }";
+
+            var variables = new
+            {
+                input = new
+                {
+                    Id = course?.Id ?? string.Empty,
+                    Title = course?.Title,
+                    ImageUri = course?.ImageUri,
+                    ImageHeaderUri = course?.ImageHeaderUri,
+                    IsBestseller = course?.IsBestseller ?? false,
+                    IsDigital = course?.IsDigital ?? false,
+                    Categories = course?.Categories,
+                    Ingress = course?.Ingress,
+                    StarRating = course?.StarRating ?? 0,
+                    Reviews = course?.Reviews,
+                    LikesInProcent = course?.LikesInProcent,
+                    Likes = course?.Likes,
+                    Hours = course?.Hours,
+                    Authors = course?.Authors?.Select(a => new { Name = a.Name, AuthorImageUri = a.AuthorImageUri }).ToList(),
+                    Prices = course?.Prices == null ? null : new { Currency = course.Prices.Currency, Price = course.Prices.Price, Discount = course.Prices.Discount },
+                    Content = course?.Content == null ? null : new
+                    {
+                        Description = course.Content.Description,
+                        Includes = course.Content.Includes,
+                        Learn = course.Content.Learn,
+                        ProgramDetails = course.Content.ProgramDetails?.Select(pd => new { Id = pd.Id, Title = pd.Title, Description = pd.Description }).ToList()
+                    }
+                }
+            };
+
+            var content = JsonContent.Create(new { query = mutation, variables });
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+
+            var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = new Uri("https://courseprovider-silicon-thanakorn.azurewebsites.net/api/graphql?code=t-uUZAYLh4S-n5ibPELeB66J327bj1C17cBG_leWlJKIAzFuL5TYxA%3D%3D"),
+                    Content = content
+                };
+
+            var response = await Http.SendAsync(request);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Response Content: {responseContent}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = JsonSerializer.Deserialize<GraphQLResponse<UpdateCourseResponse>>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (result?.Data?.UpdateCourse != null)
+                {
+                    Console.WriteLine("Course updated successfully.");
+                    Console.WriteLine($"Updated Course ID: {result.Data.UpdateCourse.Id}");
+
+                    // Use InvokeAsync to ensure navigation is performed correctly
+                    await InvokeAsync(() => NavigationManager.NavigateTo("/courses"));
+                }
+                else
+                {
+                    errorMessage = "Data format error: 'updateCourse' property not found.";
+                    Console.WriteLine($"Error: {errorMessage}");
+                }
+            }
+            else
+            {
+                errorMessage = $"Error: {response.StatusCode}";
+                Console.WriteLine($"Error Content: {responseContent}");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+            Console.WriteLine(ex.ToString());
+        }
+    }
+
+    private void AddAuthor()
+    {
+        course.Authors.Add(new Author { Name = "", AuthorImageUri = "" });
+    }
+
+    private void AddProgramDetail()
+    {
+        course.Content.ProgramDetails.Add(new ProgramDetailItem { Title = "", Description = "" });
+    }
+
+    private class GraphQLResponse<T>
+    {
+        [JsonPropertyName("data")]
+        public T Data { get; set; }
+    }
+
+    private class CourseData
+    {
+        [JsonPropertyName("getCourseById")]
+        public CourseUpdateRequest GetCourseById { get; set; }
+    }
+
+    private class UpdateCourseResponse
+    {
+        [JsonPropertyName("updateCourse")]
+        public CourseId UpdateCourse { get; set; }
+    }
+
+    private class CourseId
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
+    }
+}

@@ -1,0 +1,25 @@
+﻿@page "/signout"
+@using AdminBlazorWebApp.Components.Account
+@using AdminBlazorWebApp.Data
+@using Microsoft.AspNetCore.Identity
+@inject NavigationManager NavigationManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject ILogger<SignOut> Logger
+@inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<h3>Signing out...</h3>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await SignInManager.SignOutAsync();
+        Logger.LogInformation("User signed out successfully.");
+
+        // Notify authentication state changed
+        var customAuthStateProvider = AuthenticationStateProvider as PersistingRevalidatingAuthenticationStateProvider;
+        customAuthStateProvider?.NotifyUserSignedOut();
+        NavigationManager.NavigateTo("/", true);
+        StateHasChanged();
+    }
+}

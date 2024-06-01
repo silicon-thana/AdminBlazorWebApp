@@ -1,0 +1,19 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using AdminBlazorWebApp.Data
+@using System.Net.Http.Headers
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ApplicationDbContext DbContext
+@rendermode InteractiveServer
+
+<div class="profile-image">
+    <h3>@User?.FirstName @User?.LastName</h3>
+    <p>@User?.Email</p>
+</div>
+
+@code {
+    [Parameter]
+    public ApplicationUser? User { get; set; }
+}

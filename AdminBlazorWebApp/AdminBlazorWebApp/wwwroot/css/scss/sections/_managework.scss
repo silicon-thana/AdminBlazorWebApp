@@ -1,0 +1,43 @@
+﻿section {
+    &.managework {
+        .container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            img{
+                margin-right: 50px;
+                display: none;
+
+                @include xl{
+                    display: block;
+                }
+
+            }
+            .content {
+                padding: 50px;
+                h2{
+                    margin-bottom:30px
+                }
+                .list {
+                    display: flex;
+                    align-items: center;
+
+                    svg{
+                        margin-right: 10px;
+                        margin-bottom: 16px;
+                    }
+    
+
+                }
+
+                a {
+                    margin-top: 20px;
+                    width: 159px;
+                    max-height: 44px;
+                    display: flex;
+                    
+                }
+            }
+        }
+    }
+}

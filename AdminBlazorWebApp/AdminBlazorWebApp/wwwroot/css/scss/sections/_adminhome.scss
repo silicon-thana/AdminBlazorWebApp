@@ -1,0 +1,19 @@
+section {
+    &.admin {
+        .container {
+            margin-top: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+
+            .admin-menu {
+                margin-top: 40px;
+                display: flex;
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+        }
+    }
+}

@@ -1,0 +1,153 @@
+﻿@page "/admins"
+@using AdminBlazorWebApp.Data
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@attribute [Authorize(Roles = "SuperAdmin,Admin")]
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+<PageTitle>Manage Admins</PageTitle>
+
+@rendermode InteractiveServer
+
+<div class="container">
+    <h3>Admin List</h3>
+    @if (error != null)
+    {
+        <p class="text-danger">@error</p>
+    }
+    else if (users == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <button class="btn btn-primary" disabled="@(!isSuperAdmin)" @onclick="RedirectToCreateAdmin">Create Admin</button>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Roles</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in users)
+                {
+                    <tr>
+                        <td>@user.UserName</td>
+                        <td>@user.FirstName</td>
+                        <td>@user.LastName</td>
+                        <td>
+                            @foreach (var role in user.UserRoles)
+                            {
+                                <span>@role</span>
+                                <br />
+                            }
+                        </td>
+                        <td style="display:flex; gap: 10px;">
+                            <a href="admins/edit/@user.Id" disabled="@(!isSuperAdmin)" class="btn-theme">Edit</a>
+                            <button class="btn btn-danger" disabled="@(!isSuperAdmin || user.UserRoles.Contains("SuperAdmin"))" @onclick="() => DeleteUser(user.Id)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    private List<UserWithRoles>? users;
+    private string? error;
+    private bool isSuperAdmin = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentUserRole();
+        await LoadUsers();
+    }
+
+    private async Task LoadCurrentUserRole()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            var currentUser = await UserManager.GetUserAsync(user);
+            if (currentUser != null)
+            {
+                var roles = await UserManager.GetRolesAsync(currentUser);
+                isSuperAdmin = roles.Contains("SuperAdmin");
+            }
+        }
+    }
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            var userList = await UserManager.Users.ToListAsync();
+            users = new List<UserWithRoles>();
+            foreach (var user in userList)
+            {
+                var userRoles = await UserManager.GetRolesAsync(user);
+                users.Add(new UserWithRoles
+                    {
+                        Id = user.Id,
+                        UserName = user.UserName,
+                        FirstName = user.FirstName,
+                        LastName = user.LastName,
+                        UserRoles = userRoles.ToList()
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            error = $"Error loading users: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteUser(string id)
+    {
+        try
+        {
+            var user = await UserManager.FindByIdAsync(id);
+            if (user != null)
+            {
+                var result = await UserManager.DeleteAsync(user);
+                if (result.Succeeded)
+                {
+                    await LoadUsers(); // Refresh the user list
+                }
+                else
+                {
+                    error = $"Failed to delete user: {string.Join(", ", result.Errors.Select(e => e.Description))}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            error = $"Error deleting user: {ex.Message}";
+        }
+    }
+
+    private void RedirectToCreateAdmin()
+    {
+        NavigationManager.NavigateTo("/createadmin");
+    }
+
+    private class UserWithRoles
+    {
+        public string Id { get; set; }
+        public string UserName { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public List<string> UserRoles { get; set; } = new List<string>();
+    }
+}

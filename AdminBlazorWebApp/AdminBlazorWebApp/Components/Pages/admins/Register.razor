@@ -1,0 +1,131 @@
+﻿@page "/createadmin"
+
+@using System.ComponentModel.DataAnnotations
+@using AdminBlazorWebApp.Filters
+@using Microsoft.AspNetCore.Identity
+@using AdminBlazorWebApp.Data
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "SuperAdmin")]
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject ILogger<Register> Logger
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create Admin</PageTitle>
+
+<section id="signup">
+    <div class="container">
+        <EditForm Model="Input" OnValidSubmit="RegisterAdmin" novalidate FormName="createAdmin">
+            <DataAnnotationsValidator />
+            <h1>Create An Admin Account</h1>
+            <div class="content">
+                <div id="form-firstname" class="input-group">
+                    <label>First Name</label>
+                    <InputText @bind-Value="Input.FirstName" autocomplete="givenname" aria-required="true" placeholder="Enter a first name" />
+                    <ValidationMessage For="() => Input.FirstName" />
+                </div>
+
+                <div id="form-lastname" class="input-group">
+                    <label>Last Name</label>
+                    <InputText @bind-Value="Input.LastName" autocomplete="surname" aria-required="true" placeholder="Enter a last name" />
+                    <ValidationMessage For="() => Input.LastName" />
+                </div>
+                <div id="form-email" class="input-group">
+                    <label>Email</label>
+                    <InputText type="email" @bind-Value="Input.Email" autocomplete="email" aria-required="true" placeholder="Enter an email address" />
+                    <ValidationMessage For="() => Input.Email" />
+                </div>
+                <div id="form-password" class="input-group">
+                    <label>Password</label>
+                    <InputText type="password" @bind-Value="Input.Password" autocomplete="new-password" aria-required="true" placeholder="********" />
+                    <ValidationMessage For="() => Input.Password" />
+                </div>
+                <div id="form-confirmpassword" class="input-group">
+                    <label>Confirm Password</label>
+                    <InputText type="password" @bind-Value="Input.ConfirmPassword" autocomplete="new-password" aria-required="true" placeholder="********" />
+                    <ValidationMessage For="() => Input.ConfirmPassword" />
+                </div>
+            </div>
+            <div>
+                @if (!string.IsNullOrEmpty(@StatusMessage))
+                {
+                    <div class="alert alert-danger">
+                        @StatusMessage
+                    </div>
+                }
+            </div>
+            <button id="form-submit" class="btn-theme-s" type="submit">Create Admin</button>
+        </EditForm>
+    </div>
+</section>
+
+@code {
+    private IEnumerable<IdentityError>? identityErrors;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+    private string? StatusMessage { get; set; }
+
+    public async Task RegisterAdmin()
+    {
+        var user = new ApplicationUser
+            {
+                FirstName = Input.FirstName,
+                LastName = Input.LastName,
+                UserName = Input.Email,
+                Email = Input.Email
+            };
+
+        var result = await UserManager.CreateAsync(user, Input.Password);
+
+        if (!result.Succeeded)
+        {
+            identityErrors = result.Errors;
+            StatusMessage = $"Error: {string.Join(", ", result.Errors.Select(error => error.Description))}";
+            return;
+        }
+
+        var roleResult = await UserManager.AddToRoleAsync(user, "Admin");
+
+        if (!roleResult.Succeeded)
+        {
+            await UserManager.DeleteAsync(user); // Rollback the user creation if role assignment fails
+            identityErrors = roleResult.Errors;
+            StatusMessage = $"Error: {string.Join(", ", roleResult.Errors.Select(error => error.Description))}";
+            return;
+        }
+
+        NavigationManager.NavigateTo("/admins");
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [Display(Name = "First name", Order = 0)]
+        [MinLength(2, ErrorMessage = "You must enter a valid first name")]
+        public string FirstName { get; set; } = null!;
+
+        [Required]
+        [Display(Name = "Last name", Order = 1)]
+        [MinLength(2, ErrorMessage = "You must enter a valid last name")]
+        public string LastName { get; set; } = null!;
+
+        [Required]
+        [EmailAddress]
+        [RegularExpression(@"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", ErrorMessage = "Invalid email address")]
+        [Display(Name = "Email", Order = 2)]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{8,}$", ErrorMessage = "Password must contain at least one lowercase letter, one uppercase letter, one digit, one special character, and be at least 8 characters long")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Password", Order = 3)]
+        public string Password { get; set; } = "";
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password", Order = 4)]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = "";
+    }
+}

@@ -1,0 +1,57 @@
+﻿section {
+    padding: 5px;
+    margin-top: 50px;
+
+    &.app {
+        background-color: #F3F6FF;
+
+        .container {
+            background-color: #EFF2FC;
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+
+            #bg {
+                display: none;
+
+                @include xxl {
+                    display: block;
+                }
+            }
+
+            .content {
+                padding: 60px 150px;
+
+                h1 {
+                    text-align: center;
+                }
+
+                @include xxl {
+
+                    h1 {
+                        padding-right: 50px;
+                        text-align: start;
+                    }
+                }
+
+                .applications {
+                    display: grid;
+
+                    .app-content {
+                        display: flex;
+                        justify-content: space-between;
+                    }
+
+                    #apprating {
+                        display:none;
+                    }
+
+                    #appbutton {
+                        margin-top: 60px;
+
+                    }
+                }
+            }
+        }
+    }
+}

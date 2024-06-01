@@ -1,0 +1,51 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<header>
+    <div class="container">
+        <a id="logo" href="/"><img src="/img/logo.svg" alt="Logo"></a>
+        <div class="btn-mobile" onclick="toggleMobileMenu()">
+            <i class="fa fa-bars"></i>
+        </div>
+        <div id="menu">
+            <nav>
+
+            </nav>
+        </div>
+        <div class="account-buttons">
+            <AuthorizeView>
+                <Authorized>
+                    <a class="btn-theme" href="/account/details"><i class="fa-regular fa-user"></i><span>My Account</span></a>
+                </Authorized>
+                <NotAuthorized>
+                    <a class="btn-gray" href="/signin"><i class="fa-regular fa-right-to-bracket"></i><span>Sign in</span></a>
+@*                     <a class="btn-theme" href="/signup"><i class="fa-regular fa-user"></i><span>Sign Up</span></a> *@
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+        <div id="mobile-menu" class="mobile-menu">
+            <button class="close-menu" onclick="toggleMobileMenu()"><i class="fa-light fa-xmark"></i></button>
+            <nav>
+                <AuthorizeView>
+                    <Authorized>
+                        <a class="btn-theme" href="/account/details" onclick="toggleMobileMenu()"><i class="fa-regular fa-user"></i><span>My Account</span></a>
+                    </Authorized>
+                    <NotAuthorized>
+                        <a class="btn-gray" href="/signin" onclick="toggleMobileMenu()"><i class="fa-regular fa-right-to-bracket"></i><span>Sign in</span></a>
+@*                         <a class="btn-theme" href="/signup" onclick="toggleMobileMenu()"><i class="fa-regular fa-user"></i><span>Sign Up</span></a> *@
+                    </NotAuthorized>
+                </AuthorizeView>
+            </nav>
+        </div>
+    </div>
+</header>
+
+@code {
+    private async Task ToggleDarkMode(ChangeEventArgs e)
+    {
+        bool isDark = (bool)e.Value;
+        await JSRuntime.InvokeVoidAsync("setDarkMode", isDark);
+    }
+}

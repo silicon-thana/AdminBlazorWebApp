@@ -1,0 +1,189 @@
+﻿@page "/account/security" 
+@using AdminBlazorWebApp.Data
+@using System.Net.Http.Headers
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
+
+@rendermode InteractiveServer
+
+<section class="account" id="account-security">
+    <div class="container">
+        <AdminBlazorWebApp.Components.Layout.NavMenu User="user" />
+        <div class="details">
+            <section class="basic-info">
+                <EditForm Model="PasswordChange" OnValidSubmit="ChangePasswordAsync" FormName="changePassword" method="post">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+                    <h2>Security</h2>
+                    <h5>Password</h5>
+                    <div class="content">
+                        <div id="form-oldpassword" class="input-group">
+                            <label for="CurrentPassword">Current Password</label>
+                            <InputText @bind-Value="PasswordChange.CurrentPassword" type="password" placeholder="Current Password" />
+                            <ValidationMessage For="() => PasswordChange.CurrentPassword" class="text-danger" />
+                        </div>
+                        <div id="form-newpassword" class="input-group">
+                            <label for="NewPassword">New Password</label>
+                            <InputText @bind-Value="PasswordChange.NewPassword" type="password" placeholder="New Password" />
+                            <ValidationMessage For="() => PasswordChange.NewPassword" class="text-danger" />
+                        </div>
+                        <div id="form-confirmpassword" class="input-group">
+                            <label for="ConfirmPassword">Confirm Password</label>
+                            <InputText @bind-Value="PasswordChange.ConfirmPassword" type="password" placeholder="Confirm New Password" />
+                            <ValidationMessage For="() => PasswordChange.ConfirmPassword" class="text-danger" />
+                        </div>
+                    </div>
+                    <div class="form-buttons">
+                        <button class="btn-gray" type="reset">Cancel</button>
+                        <button class="btn-theme" type="submit">Save Changes</button>
+                    </div>
+                    @if (!string.IsNullOrEmpty(StatusMessage))
+                    {
+                        <div>@StatusMessage</div>
+                    }
+                </EditForm>
+            </section>
+            <hr />
+            <section class="adress-info">
+                <EditForm Model="DeleteAccount" OnValidSubmit="DeleteAccountAsync" FormName="deleteAccount" method="post">
+                    <DataAnnotationsValidator />
+                    <h5>Delete Account</h5>
+                    <div class="content">
+                        <div id="form-delete" class="input-group">
+                            <p>When you delete your account, your public profile will be deactivated immediately. If you change your mind before the 14 days are up, sign in with your email and password, and we’ll send you a link to reactivate your account.</p>
+                            <div id="form-terms" class="checkbox">
+                                <div class="checkbox-group">
+                                    <InputCheckbox @bind-Value="DeleteAccount.ConfirmDelete" />
+                                    <label>Yes, I want to delete my account.</label>
+                                </div>
+                                <ValidationMessage For="() => DeleteAccount.ConfirmDelete" class="text-danger" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-buttons">
+                        <button class="btn-danger" type="submit">Delete</button>
+                    </div>
+                    @if (!string.IsNullOrEmpty(StatusMessage))
+                    {
+                        <div>@StatusMessage</div>
+                    }
+                </EditForm>
+            </section>
+        </div>
+    </div>
+</section>
+
+@code {
+    private ApplicationUser user = new ApplicationUser();
+
+    private PasswordChangeModel PasswordChange { get; set; } = new PasswordChangeModel();
+    private DeleteAccountModel DeleteAccount { get; set; } = new DeleteAccountModel();
+
+    private string StatusMessage { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userIdentity = authState.User;
+
+        if (userIdentity.Identity?.IsAuthenticated == true)
+        {
+            user = await UserManager.GetUserAsync(userIdentity);
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/signin", true);
+        }
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        StatusMessage = string.Empty; // Clear previous status messages
+
+        Console.WriteLine($"Attempting to change password for user: {user.UserName}");
+
+        var result = await UserManager.ChangePasswordAsync(user, PasswordChange.CurrentPassword, PasswordChange.NewPassword);
+
+        if (result.Succeeded)
+        {
+            StatusMessage = "Your password has been changed. You will be signed out.";
+
+            // Navigate to the sign-out page
+            NavigationManager.NavigateTo("/signout");
+        }
+        else
+        {
+            foreach (var error in result.Errors)
+            {
+                StatusMessage += $"{error.Description} ";
+                Console.WriteLine($"Password change error: {error.Description}");
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task DeleteAccountAsync()
+    {
+        StatusMessage = string.Empty; // Clear previous status messages
+
+        if (DeleteAccount.ConfirmDelete)
+        {
+            Console.WriteLine($"Attempting to delete account for user: {user.UserName}");
+
+            var result = await UserManager.DeleteAsync(user);
+
+            if (result.Succeeded)
+            {
+                NavigationManager.NavigateTo("/signout"); // Navigate to the sign-out page
+            }
+            else
+            {
+                foreach (var error in result.Errors)
+                {
+                    StatusMessage += $"{error.Description} ";
+                    Console.WriteLine($"Account deletion error: {error.Description}");
+                }
+            }
+        }
+        else
+        {
+            StatusMessage = "You must confirm the account deletion.";
+            Console.WriteLine("Account deletion not confirmed.");
+        }
+
+        StateHasChanged();
+    }
+
+    public class PasswordChangeModel
+    {
+        [Required]
+        [DataType(DataType.Password)]
+        [Display(Name = "Current Password")]
+        public string CurrentPassword { get; set; } = string.Empty;
+
+        [Required]
+        [DataType(DataType.Password)]
+        [Display(Name = "New Password")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [Required]
+        [DataType(DataType.Password)]
+        [Compare("NewPassword", ErrorMessage = "The new password and confirmation password do not match.")]
+        [Display(Name = "Confirm Password")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+    public class DeleteAccountModel
+    {
+        [Required]
+        [Display(Name = "Confirm Delete")]
+        public bool ConfirmDelete { get; set; }
+    }
+}

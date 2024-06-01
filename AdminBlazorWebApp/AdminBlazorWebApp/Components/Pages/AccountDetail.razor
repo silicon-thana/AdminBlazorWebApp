@@ -1,0 +1,182 @@
+﻿@page "/Account/Details"
+@using AdminBlazorWebApp.Data
+@using Microsoft.AspNetCore.Identity
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ApplicationDbContext context
+@inject HttpClient Http
+
+@rendermode InteractiveServer
+
+<PageTitle>Profile</PageTitle>
+<section id="account-details" class="account">
+    <div class="container">
+        <AdminBlazorWebApp.Components.Layout.NavMenu User="user"/>
+        <div class="details">
+            <section class="basic-info">
+                <EditForm Model="Input" FormName="userInfo" OnValidSubmit="OnValidSubmitAsync">
+                    <DataAnnotationsValidator />
+                    <h2>Account Info</h2>
+                    <h5>Basic Info</h5>
+                    <div class="content">
+                        <div id="form-firstname" class="input-group">
+                            <InputText @bind-Value="Input.FirstName" placeholder="Enter your first name" />
+                            <label for="FirstName">FirstName</label>
+                            <ValidationMessage For="() => Input.FirstName" class="text-danger" />
+                        </div>
+                        <div id="form-lastname" class="input-group">
+                            <InputText @bind-Value="Input.LastName" placeholder="Enter your last name" />
+                            <label for="LastName">Lastname</label>
+                            <ValidationMessage For="() => Input.LastName" class="text-danger" />
+                        </div>
+                        <div id="form-email" class="input-group">
+                            <InputText @bind-Value="Input.Email" placeholder="Enter your email" />
+                            <label for="Email">Email</label>
+                            <ValidationMessage For="() => Input.Email" class="text-danger" />
+                        </div>
+                        <div id="form-phone" class="input-group">
+                            <InputText @bind-Value="Input.PhoneNumber" placeholder="Enter your phone number" />
+                            <label for="PhoneNumber">Phone</label>
+                            <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
+                        </div>
+                        <div class="form-buttons">
+                            <button class="btn-gray" type="reset">Cancel</button>
+                            <button class="btn-theme" type="submit">Save Changes</button>
+                        </div>
+                    </div>
+                </EditForm>
+                @StatusMessage
+            </section>
+            <hr />
+        </div>
+    </div>
+</section>
+
+@code {
+    private ApplicationUser? user;
+    private string? returnUrl;
+
+    [Parameter]
+    public string? StatusMessage { get; set; }
+
+    private InputModel Input { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserAsync();
+    }
+
+    private async Task LoadUserAsync()
+    {
+        try
+        {
+            returnUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+            NavigationManager.LocationChanged += OnlocationChanged;
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userIdentity = authState.User;
+
+            if (userIdentity.Identity?.IsAuthenticated == true)
+            {
+                var userId = UserManager.GetUserId(userIdentity);
+                user = await UserManager.FindByIdAsync(userId!);
+
+                if (user != null)
+                {
+                    Input = new InputModel
+                        {
+                            FirstName = user.FirstName,
+                            LastName = user.LastName,
+                            Email = user.Email,
+                            PhoneNumber = user.PhoneNumber,
+                        };
+                }
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/signin", true);
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = "An error occurred while loading user information.";
+            Console.WriteLine($"Error in LoadUserAsync: {ex.Message}");
+        }
+    }
+
+    private void OnlocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        returnUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnlocationChanged;
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        try
+        {
+            if (user != null)
+            {
+                user.FirstName = Input.FirstName!;
+                user.LastName = Input.LastName!;
+                user.Email = Input.Email;
+                user.PhoneNumber = Input.PhoneNumber;
+
+                var result = await UserManager.UpdateAsync(user);
+                if (result.Succeeded)
+                {
+                    StatusMessage = "Your profile has been updated.";
+                    await LoadUserAsync(); // Reload user to reflect changes
+                }
+                else
+                {
+                    StatusMessage = "Unexpected error when trying to update profile.";
+                    LogErrors(result);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = "An error occurred while updating profile.";
+            Console.WriteLine($"Error in OnValidSubmitAsync: {ex.Message}");
+        }
+    }
+
+    private void LogErrors(IdentityResult result)
+    {
+        foreach (var error in result.Errors)
+        {
+            Console.WriteLine($"Error: {error.Description}");
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [Display(Name = "First Name")]
+        public string? FirstName { get; set; }
+
+        [Required]
+        [Display(Name = "Last Name")]
+        public string? LastName { get; set; }
+
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string? Email { get; set; }
+
+        [Phone]
+        [Display(Name = "Phone Number")]
+        public string? PhoneNumber { get; set; }
+    }
+
+}

@@ -1,0 +1,23 @@
+﻿@using AdminBlazorWebApp.Data
+@inject NavigationManager NavigationManager
+<aside>
+    <div class="profile-info">
+        <ProfilePicture User="User"/>
+    </div>
+    <nav>
+        <NavLink href="/account/details" class="btn-transparent" ActiveClass="btn-theme-s">Account Details</NavLink>
+        <NavLink href="/account/security" class="btn-transparent" ActiveClass="btn-theme-s">Security</NavLink>
+        <button class="btn-transparent" @onclick="NavigateToSignOut">Sign Out</button>
+    </nav>
+</aside>
+
+@code {
+    [Parameter]
+    public ApplicationUser? User { get; set; }
+
+    private void NavigateToSignOut()
+    {
+        NavigationManager.NavigateTo("/signout");
+    }
+}
+  

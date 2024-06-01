@@ -1,0 +1,110 @@
+@import '../core/_media.scss';
+
+#signin {
+    height: 100%;
+
+    .container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+
+        @include lg {
+            width: 60%;
+        }
+
+        @include xl {
+            width: 40%;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: $gray-600;
+
+            i {
+                color: $gray-600;
+            }
+
+            a {
+                text-decoration: none;
+                color: $gray-600;
+
+                &:hover {
+                    transition: all 0.15s ease-in-out;
+                    cursor: pointer;
+                    color: $info;
+                }
+            }
+
+            .active {
+                color: $theme;
+            }
+        }
+
+        form {
+            padding: 1rem;
+            border-bottom: 1px solid #ccc;
+
+            .content {
+                display: grid;
+                gap: 1rem 2rem;
+                grid-template-columns: 1fr;
+                grid-template-areas: "email" "password" "remember" "invalid" "button" "forgot";
+
+                #form-email {
+                    grid-area: email;
+                }
+
+                #form-password {
+                    grid-area: password;
+                }
+
+                #form-remember {
+                    grid-area: remember;
+                    padding: 1rem 0;
+                }
+
+                #form-submit {
+                    grid-area: button;
+                }
+
+                #form-forgotpassword {
+                    grid-area: forgot;
+                    margin: 1rem 0 0 0;
+                    text-align: center;
+                    color: $theme;
+                }
+
+                #form-invalid {
+                    grid-area: invalid;
+                }
+            }
+        }
+
+        .signin-social {
+            margin-top: 1rem;
+            text-align: center;
+
+            h6 {
+                margin-bottom: 1rem;
+            }
+
+            .social-button {
+                display: flex;
+                justify-content: space-between;
+                gap: 50px;
+                ;
+
+
+                button {
+                    padding: 10px 50px;
+                }
+            }
+        }
+    }
+}

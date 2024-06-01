@@ -1,0 +1,201 @@
+﻿@page "/newsletter"
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
+@inject HttpClient Http
+@rendermode InteractiveServer
+<PageTitle>Manage Newsletter</PageTitle>
+
+<div class="container">
+    <h3>Subscriber List</h3>
+    @if (error != null)
+    {
+        <p class="text-danger">@error</p>
+    }
+    else if (subscribers == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Daily Newsletter</th>
+                    <th>Advertising Updates</th>
+                    <th>Week in Review</th>
+                    <th>Event Updates</th>
+                    <th>Startup Weekly</th>
+                    <th>Podcasts</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var subscriber in subscribers)
+                {
+                    <tr>
+                        <td>@subscriber.Email</td>
+                        <td>
+                            @if (IsEditing(subscriber.Email))
+                            {
+                                <input type="checkbox" @bind="subscriber.DailyNewsletter" />
+                            }
+                            else
+                            {
+                                @(subscriber.DailyNewsletter ? "Yes" : "No")
+                            }
+                        </td>
+                        <td>
+                            @if (IsEditing(subscriber.Email))
+                            {
+                                <input type="checkbox" @bind="subscriber.AdvertisingUpdates" />
+                            }
+                            else
+                            {
+                                @(subscriber.AdvertisingUpdates ? "Yes" : "No")
+                            }
+                        </td>
+                        <td>
+                            @if (IsEditing(subscriber.Email))
+                            {
+                                <input type="checkbox" @bind="subscriber.WeekinReview" />
+                            }
+                            else
+                            {
+                                @(subscriber.WeekinReview ? "Yes" : "No")
+                            }
+                        </td>
+                        <td>
+                            @if (IsEditing(subscriber.Email))
+                            {
+                                <input type="checkbox" @bind="subscriber.EventUpdates" />
+                            }
+                            else
+                            {
+                                @(subscriber.EventUpdates ? "Yes" : "No")
+                            }
+                        </td>
+                        <td>
+                            @if (IsEditing(subscriber.Email))
+                            {
+                                <input type="checkbox" @bind="subscriber.StartupWeekly" />
+                            }
+                            else
+                            {
+                                @(subscriber.StartupWeekly ? "Yes" : "No")
+                            }
+                        </td>
+                        <td>
+                            @if (IsEditing(subscriber.Email))
+                            {
+                                <input type="checkbox" @bind="subscriber.Podcasts" />
+                            }
+                            else
+                            {
+                                @(subscriber.Podcasts ? "Yes" : "No")
+                            }
+                        </td>
+                        <td>
+                            @if (IsEditing(subscriber.Email))
+                            {
+                                <button class="btn btn-success" @onclick="() => SaveSubscriber(subscriber)">Save</button>
+                                <button class="btn btn-danger" @onclick="() => CancelEdit(subscriber.Email)">Cancel</button>
+                            }
+                            else
+                            {
+                                <button class="btn-gray" @onclick="() => EditSubscriber(subscriber.Email)">Edit</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    private List<SubscribeEntity>? subscribers;
+    private string? error;
+    private HashSet<string> editingSubscribers = new HashSet<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSubscribers();
+    }
+
+    private async Task LoadSubscribers()
+    {
+        try
+        {
+            var apiUrl = "https://newsletterprovider-silicon-thanakorn.azurewebsites.net/api/GetSubscribers?code=BXi6HO6liT0RT95Sczz2NgfxDqanLOv1lDoLhnLv9oizAzFucBX1mA%3D%3D";
+            subscribers = await Http.GetFromJsonAsync<List<SubscribeEntity>>(apiUrl);
+            Console.WriteLine("Loaded subscribers successfully");
+        }
+        catch (Exception ex)
+        {
+            error = $"Error loading subscribers: {ex.Message}";
+            Console.WriteLine(error);
+        }
+    }
+
+    private bool IsEditing(string email) => editingSubscribers.Contains(email);
+
+    private void EditSubscriber(string email)
+    {
+        editingSubscribers.Add(email);
+    }
+
+    private void CancelEdit(string email)
+    {
+        editingSubscribers.Remove(email);
+        // Reload the subscriber data to discard changes
+        _ = LoadSubscribers();
+    }
+
+    private async Task SaveSubscriber(SubscribeEntity subscriber)
+    {
+        try
+        {
+            Console.WriteLine($"Saving subscriber: {subscriber.Email}");
+            var apiUrl = $"https://newsletterprovider-silicon-thanakorn.azurewebsites.net/api/UpdateSubscriber/{subscriber.Email}?code=BhdykpNIhq24uH8BFL2rcfXZyBkYXVe4jrYZHbftOTITAzFus8x0fg%3D%3D";
+            var response = await Http.PutAsJsonAsync(apiUrl, new
+            {
+                dailyNewsletter = subscriber.DailyNewsletter,
+                advertisingUpdates = subscriber.AdvertisingUpdates,
+                weekinReview = subscriber.WeekinReview,
+                eventUpdates = subscriber.EventUpdates,
+                startupWeekly = subscriber.StartupWeekly,
+                podcasts = subscriber.Podcasts
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                editingSubscribers.Remove(subscriber.Email);
+                Console.WriteLine($"Successfully saved subscriber: {subscriber.Email}");
+            }
+            else
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                error = $"Error saving subscriber: {responseContent}";
+                Console.WriteLine(error);
+            }
+        }
+        catch (Exception ex)
+        {
+            error = $"Error saving subscriber: {ex.Message}";
+            Console.WriteLine(error);
+        }
+    }
+
+    public class SubscribeEntity
+    {
+        public string Email { get; set; } = null!;
+        public bool DailyNewsletter { get; set; }
+        public bool AdvertisingUpdates { get; set; }
+        public bool WeekinReview { get; set; }
+        public bool EventUpdates { get; set; }
+        public bool StartupWeekly { get; set; }
+        public bool Podcasts { get; set; }
+    }
+}

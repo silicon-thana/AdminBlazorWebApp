@@ -1,0 +1,189 @@
+﻿@page "/admins/edit/{Id}"
+@using AdminBlazorWebApp.Data
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject NavigationManager Navigation
+<PageTitle>Edit @user?.UserName</PageTitle>
+
+@rendermode InteractiveServer
+
+<div class="container">
+    <h3>Edit User</h3>
+
+    @if (error != null)
+    {
+        <p class="text-danger">@error</p>
+    }
+    else if (user == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <EditForm Model="@user" OnValidSubmit="HandleValidSubmit" FormName="userEdit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="form-group">
+                <label for="userName">Username</label>
+                <InputText id="userName" class="form-control" @bind-Value="user.UserName" />
+            </div>
+            <div class="form-group">
+                <label for="firstName">First Name</label>
+                <InputText id="firstName" class="form-control" @bind-Value="user.FirstName" />
+            </div>
+            <div class="form-group">
+                <label for="lastName">Last Name</label>
+                <InputText id="lastName" class="form-control" @bind-Value="user.LastName" />
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <InputText id="email" class="form-control" @bind-Value="user.Email" />
+            </div>
+
+            <div class="form-group">
+                <label for="newPassword">New Password</label>
+                <InputText id="newPassword" type="password" class="form-control" @bind-Value="newPassword" />
+            </div>
+
+            <div class="form-group">
+                <label for="roles">Roles</label>
+                <InputSelect id="roles" class="form-control" @bind-Value="selectedRole">
+                    @foreach (var role in allRoles)
+                    {
+                        <option value="@role">@role</option>
+                    }
+                </InputSelect>
+                <button type="button" class="btn btn-primary" @onclick="AddRole">Add Role</button>
+            </div>
+
+            <div>
+                <h4>Current Roles:</h4>
+                <ul>
+                    @foreach (var role in userRoles)
+                    {
+                        <li>
+                            @role
+                            <button type="button" class="btn btn-danger" @onclick="() => RemoveRole(role)">Remove</button>
+                        </li>
+                    }
+                </ul>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; }
+
+    private ApplicationUser user;
+    private string error;
+    private string newPassword;
+    private string selectedRole;
+    private List<string> allRoles = new List<string>();
+    private List<string> userRoles = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUser();
+        await LoadRoles();
+    }
+
+    private async Task LoadUser()
+    {
+        try
+        {
+            user = await UserManager.FindByIdAsync(Id);
+            if (user == null)
+            {
+                error = "User not found.";
+                return;
+            }
+            userRoles = (await UserManager.GetRolesAsync(user)).ToList();
+        }
+        catch (Exception ex)
+        {
+            error = $"Error fetching user data. {ex.Message}";
+        }
+    }
+
+    private async Task LoadRoles()
+    {
+        try
+        {
+            allRoles = (await RoleManager.Roles.Select(r => r.Name).ToListAsync());
+        }
+        catch (Exception ex)
+        {
+            error = $"Error fetching roles: {ex.Message}";
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var updateResult = await UserManager.UpdateAsync(user);
+
+            if (!string.IsNullOrEmpty(newPassword))
+            {
+                var token = await UserManager.GeneratePasswordResetTokenAsync(user);
+                var passwordResult = await UserManager.ResetPasswordAsync(user, token, newPassword);
+                if (!passwordResult.Succeeded)
+                {
+                    error = $"Failed to update password: {string.Join(", ", passwordResult.Errors.Select(e => e.Description))}";
+                    return;
+                }
+            }
+
+            if (updateResult.Succeeded)
+            {
+                Navigation.NavigateTo("/admins");
+            }
+            else
+            {
+                error = $"Failed to update user: {string.Join(", ", updateResult.Errors.Select(e => e.Description))}";
+            }
+        }
+        catch (Exception ex)
+        {
+            error = $"Unexpected error: {ex.Message}";
+        }
+    }
+
+    private async Task AddRole()
+    {
+        if (!string.IsNullOrEmpty(selectedRole) && !userRoles.Contains(selectedRole))
+        {
+            var result = await UserManager.AddToRoleAsync(user, selectedRole);
+            if (result.Succeeded)
+            {
+                userRoles.Add(selectedRole);
+            }
+            else
+            {
+                error = $"Failed to add role: {string.Join(", ", result.Errors.Select(e => e.Description))}";
+            }
+        }
+    }
+
+    private async Task RemoveRole(string role)
+    {
+        var result = await UserManager.RemoveFromRoleAsync(user, role);
+        if (result.Succeeded)
+        {
+            userRoles.Remove(role);
+        }
+        else
+        {
+            error = $"Failed to remove role: {string.Join(", ", result.Errors.Select(e => e.Description))}";
+        }
+    }
+}

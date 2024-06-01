@@ -1,0 +1,28 @@
+﻿@page "/"
+
+<PageTitle>Home Page</PageTitle>
+
+<section class="admin">
+    <div class="container">
+        <AuthorizeView>
+            <Authorized>
+                <h2>Welcome Admin</h2>
+                <div class="admin-menu">
+                    <NavLink class="btn-theme" href="/users">Users</NavLink>
+                    <NavLink class="btn-theme" href="/newsletter">Subscribers</NavLink>
+                    <NavLink class="btn-theme" href="/courses">Courses</NavLink>
+                    <NavLink class="btn-theme" href="/admins">Admins</NavLink>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <h2>Welcome Admin</h2>
+                <h5>Please Sign In.</h5>
+            </NotAuthorized>
+        </AuthorizeView>
+
+    </div>
+
+</section>
+
+@code{
+}

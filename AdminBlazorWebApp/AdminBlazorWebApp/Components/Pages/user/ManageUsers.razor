@@ -1,0 +1,108 @@
+﻿@page "/users"
+@using AdminBlazorWebApp.Data
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
+@inject HttpClient Http
+<PageTitle>Manage Users</PageTitle>
+
+
+
+@rendermode InteractiveServer
+
+<div class="container">
+    <h3>User List</h3>
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <p><em>Loading...</em></p>
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (error != null)
+    {
+        <p class="text-danger">@error</p>
+    }
+    else if (users == null)
+    {
+        <p>No users found.</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in users)
+                {
+                    <tr>
+                        <td>@user.UserName</td>
+                        <td>@user.FirstName</td>
+                        <td>@user.LastName</td>
+                        <td style="display:flex; gap: 10px;">
+                            <a href="users/edit/@user.Id" class="btn-theme">Edit</a>
+                            <button class="btn btn-danger" @onclick="() => DeleteUser(user.Id)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    private List<ApplicationUserForUser>? users;
+    private string? error;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            var apiUrl = "https://userprovider-silicon-thanakorn.azurewebsites.net/api/GetUsers?code=v7TGf6LUCFmjhTXotMVaEGqHJZ1uSz-xafXIE3fpLoRmAzFutv5WRg%3D%3D";
+            users = await Http.GetFromJsonAsync<List<ApplicationUserForUser>>(apiUrl);
+        }
+        catch (Exception ex)
+        {
+            error = $"Error loading users: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task DeleteUser(string id)
+    {
+        var deleteUrl = $"https://userprovider-silicon-thanakorn.azurewebsites.net/api/DeleteUser/{id}?code=D29AUT18Cswl29hm5JPezVKtk9v0r3_W_pO1p_pyveJRAzFu2iIzIQ%3D%3D";
+
+        try
+        {
+            var response = await Http.DeleteAsync(deleteUrl);
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadUsers(); // Refresh the user list
+            }
+            else
+            {
+                error = $"Failed to delete user. Status code: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            error = $"Error deleting user: {ex.Message}";
+        }
+    }
+}
