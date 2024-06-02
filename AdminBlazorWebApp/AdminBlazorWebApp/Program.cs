@@ -11,16 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 var keyVaultUri = builder.Configuration["VaultUri"];
 if (!string.IsNullOrEmpty(keyVaultUri))
 {
-    var clientId = Environment.GetEnvironmentVariable("AdminWebApp_CLIENT_ID");
-    var tenantId = Environment.GetEnvironmentVariable("AdminWebApp_TENANT_ID");
-    var clientSecret = Environment.GetEnvironmentVariable("AdminWebApp_CLIENT_SECRET");
-
-    if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(tenantId) || string.IsNullOrEmpty(clientSecret))
-    {
-        throw new InvalidOperationException("One or more environment variables are not set.");
-    }
-
-    var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+    var credential = new DefaultAzureCredential();
     builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUri), credential);
 }
 
